@@ -42,12 +42,12 @@ git clone https://github.com/kasend123/D.A.S.H
 
 2. Instal Dependensi:
 Pastikan file requirements.txt Anda berisi semua library yang dibutuhkan:
-streamlit
-pandas
-plotly
-numpy
-openai
-fpdf
+streamlit,
+pandas,
+plotly,
+numpy,
+openai,
+fpdf.
 
 3. Kemudian instal:
 pip install -r requirements.txt
