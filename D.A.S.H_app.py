@@ -12,8 +12,7 @@ st.set_page_config(
     initial_sidebar_state="expanded" # Sidebar dibuka secara default
 )
 
-# --- CSS Kustom untuk Tema Kucing dan Warna Pastel ---
-# Menambahkan CSS kustom untuk memberikan tampilan yang lembut, pastel, dan bertema kucing.
+# --- CSS Kustom untuk Tema Kucing dan Warna Pastel (Satu Hue: Orange/Brown) ---
 # Menggunakan font Inter dari Google Fonts.
 st.markdown("""
     <style>
@@ -24,12 +23,12 @@ st.markdown("""
             color: #4B4B4B; /* Warna teks gelap lembut */
         }
         .stApp {
-            background-color: #F0F2F6; /* Warna latar belakang sangat lembut */
-            background-image: url('https://placehold.co/10x10/F0F2F6/F0F2F6?text=+'); /* Placeholder kecil */
+            background-color: #FDF7F5; /* Sangat ringan, hampir putih dengan hint warm */
+            background-image: url('https://placehold.co/10x10/FDF7F5/FDF7F5?text=+'); /* Placeholder kecil */
             background-repeat: repeat;
         }
         .st-emotion-cache-z5fcl4 { /* Header main-content */
-            background-color: #FFC0CB; /* Pink pastel untuk header */
+            background-color: #F8E0CC; /* Oranye pastel lembut untuk header */
             padding: 1rem 1rem;
             border-radius: 15px; /* Sudut membulat */
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
@@ -40,7 +39,7 @@ st.markdown("""
             padding-bottom: 1rem;
         }
         .st-emotion-cache-16txt4y { /* Sidebar background */
-            background-color: #D2F7DF; /* Hijau mint pastel */
+            background-color: #D4A59A; /* Coklat/oranye pastel yang lebih dalam */
             border-radius: 15px;
             padding: 20px;
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
@@ -52,7 +51,7 @@ st.markdown("""
             color: #5A5A5A; /* Warna judul yang sedikit lebih gelap */
         }
         .stButton>button {
-            background-color: #FFDAB9; /* Orange pastel lembut untuk tombol */
+            background-color: #EEDDCC; /* Peach/oranye pastel lembut untuk tombol */
             color: #5A5A5A;
             border-radius: 10px;
             border: none;
@@ -62,7 +61,7 @@ st.markdown("""
             transition: all 0.3s ease;
         }
         .stButton>button:hover {
-            background-color: #FFBF80; /* Warna sedikit lebih gelap saat hover */
+            background-color: #E5CCBB; /* Warna sedikit lebih gelap saat hover */
             color: #3C3C3C;
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
             transform: translateY(-2px);
@@ -87,7 +86,7 @@ st.markdown("""
             color: #5A5A5A;
         }
         .st-emotion-cache-eczf16 { /* Expander header */
-            background-color: #E0BBE4; /* Ungu pastel */
+            background-color: #D4A59A; /* Sama dengan sidebar untuk konsistensi */
             border-radius: 10px;
             padding: 0.75rem 1rem;
             margin-bottom: 10px;
@@ -103,7 +102,7 @@ st.markdown("""
 
         /* Styling untuk metrik */
         .metric-container {
-            background-color: #FFEFD5; /* Peach pastel */
+            background-color: #F8EBE6; /* Peach/oranye pastel sangat ringan */
             border-radius: 15px;
             padding: 20px;
             text-align: center;
@@ -116,12 +115,17 @@ st.markdown("""
             font-weight: 600;
         }
         .metric-container .st-emotion-cache-r421ms + div {
-            color: #FF8C00; /* Warna value yang lebih kuat */
+            color: #D4A59A; /* Warna value yang lebih kuat, dari palet utama */
             font-size: 2em;
             font-weight: bold;
         }
     </style>
 """, unsafe_allow_html=True)
+
+# --- Define a single-hue pastel color sequence for Plotly charts ---
+# Urutan warna pastel dalam satu hue (oranye/coklat lembut)
+single_hue_pastel_colors = ["#F8E0CC", "#EEDDCB", "#E0CCBB", "#D4BBAC", "#C8AA9C", "#BBAA9B"]
+
 
 # --- Fungsi untuk Membuat Dataset Sintetis ---
 def create_synthetic_data(num_rows=1000):
@@ -262,7 +266,7 @@ if data is not None and not data.empty:
     sentiment_counts.columns = ["Sentimen", "Jumlah"]
     fig_sentiment = px.pie(sentiment_counts, values="Jumlah", names="Sentimen",
                            title="Distribusi Sentimen Terhadap Topik",
-                           color_discrete_sequence=px.colors.qualitative.Pastel)
+                           color_discrete_sequence=single_hue_pastel_colors) # Menggunakan palet satu hue
     fig_sentiment.update_traces(textposition="inside", textinfo="percent+label")
     st.plotly_chart(fig_sentiment, use_container_width=True)
     st.markdown("#### Insight Kucing AI 💡")
@@ -280,7 +284,7 @@ if data is not None and not data.empty:
     daily_engagement = data.groupby("Date_Day")["Engagements"].sum().reset_index()
     fig_engagement_trend = px.line(daily_engagement, x="Date_Day", y="Engagements",
                                    title="Tren Total Engagement Harian",
-                                   color_discrete_sequence=["#FFDAB9"]) # Warna pastel orange
+                                   color_discrete_sequence=[single_hue_pastel_colors[0]]) # Menggunakan warna pertama dari palet
     fig_engagement_trend.update_xaxes(title_text="Tanggal")
     fig_engagement_trend.update_yaxes(title_text="Total Engagement")
     st.plotly_chart(fig_engagement_trend, use_container_width=True)
@@ -299,7 +303,7 @@ if data is not None and not data.empty:
     fig_platform_engagement = px.bar(platform_engagement, x="Platform", y="Engagements",
                                       title="Total Engagement per Platform",
                                       color="Platform",
-                                      color_discrete_sequence=px.colors.qualitative.Pastel)
+                                      color_discrete_sequence=single_hue_pastel_colors) # Menggunakan palet satu hue
     fig_platform_engagement.update_xaxes(title_text="Platform")
     fig_platform_engagement.update_yaxes(title_text="Total Engagement")
     st.plotly_chart(fig_platform_engagement, use_container_width=True)
@@ -317,7 +321,7 @@ if data is not None and not data.empty:
     media_type_counts.columns = ["Tipe Media", "Jumlah"]
     fig_media_type_mix = px.pie(media_type_counts, values="Jumlah", names="Tipe Media",
                                 title="Proporsi Tipe Media",
-                                color_discrete_sequence=px.colors.qualitative.Pastel)
+                                color_discrete_sequence=single_hue_pastel_colors) # Menggunakan palet satu hue
     fig_media_type_mix.update_traces(textposition="inside", textinfo="percent+label")
     st.plotly_chart(fig_media_type_mix, use_container_width=True)
     st.markdown("#### Insight Kucing AI 💡")
@@ -335,7 +339,7 @@ if data is not None and not data.empty:
     fig_top_locations = px.bar(top_5_locations, x="Location", y="Engagements",
                                 title="Top 5 Lokasi Berdasarkan Total Engagement",
                                 color="Location",
-                                color_discrete_sequence=px.colors.qualitative.Pastel)
+                                color_discrete_sequence=single_hue_pastel_colors) # Menggunakan palet satu hue
     fig_top_locations.update_xaxes(title_text="Lokasi")
     fig_top_locations.update_yaxes(title_text="Total Engagement")
     st.plotly_chart(fig_top_locations, use_container_width=True)
