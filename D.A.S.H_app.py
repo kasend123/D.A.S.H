@@ -2,35 +2,34 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 import numpy as np
+from openai import OpenAI # Import OpenAI SDK
 
 # --- Konfigurasi Halaman Streamlit ---
-# Mengatur judul halaman, ikon, dan layout.
 st.set_page_config(
     page_title="Papan Kontrol Intelijen Media Kucing 🐾",
-    page_icon="🐱", # Ikon kucing yang lucu
-    layout="wide", # Layout lebar untuk tampilan dashboard yang lebih baik
-    initial_sidebar_state="expanded" # Sidebar dibuka secara default
+    page_icon="🐱",
+    layout="wide",
+    initial_sidebar_state="expanded"
 )
 
 # --- CSS Kustom untuk Tema Kucing dan Warna Pastel (Satu Hue: Orange/Brown) ---
-# Menggunakan font Inter dari Google Fonts.
 st.markdown("""
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
 
         html, body, [class*="st-"] {
             font-family: 'Inter', sans-serif;
-            color: #4B4B4B; /* Warna teks gelap lembut */
+            color: #4B4B4B; /* Soft dark text color */
         }
         .stApp {
-            background-color: #FDF7F5; /* Sangat ringan, hampir putih dengan hint warm */
-            background-image: url('https://placehold.co/10x10/FDF7F5/FDF7F5?text=+'); /* Placeholder kecil */
+            background-color: #FDF7F5; /* Very light, almost white with a warm hint */
+            background-image: url('https://placehold.co/10x10/FDF7F5/FDF7F5?text=+'); /* Small placeholder */
             background-repeat: repeat;
         }
         .st-emotion-cache-z5fcl4 { /* Header main-content */
-            background-color: #F8E0CC; /* Oranye pastel lembut untuk header */
+            background-color: #F8E0CC; /* Soft pastel orange for header */
             padding: 1rem 1rem;
-            border-radius: 15px; /* Sudut membulat */
+            border-radius: 15px; /* Rounded corners */
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
             margin-bottom: 20px;
         }
@@ -39,7 +38,7 @@ st.markdown("""
             padding-bottom: 1rem;
         }
         .st-emotion-cache-16txt4y { /* Sidebar background */
-            background-color: #D4A59A; /* Coklat/oranye pastel yang lebih dalam */
+            background-color: #D4A59A; /* Deeper pastel brown/orange */
             border-radius: 15px;
             padding: 20px;
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
@@ -48,10 +47,10 @@ st.markdown("""
             color: #3C3C3C;
         }
         h1, h2, h3, h4, h5, h6 {
-            color: #5A5A5A; /* Warna judul yang sedikit lebih gelap */
+            color: #5A5A5A; /* Slightly darker heading color */
         }
         .stButton>button {
-            background-color: #EEDDCC; /* Peach/oranye pastel lembut untuk tombol */
+            background-color: #EEDDCC; /* Soft peach/orange pastel for buttons */
             color: #5A5A5A;
             border-radius: 10px;
             border: none;
@@ -61,9 +60,9 @@ st.markdown("""
             transition: all 0.3s ease;
         }
         .stButton>button:hover {
-            background-color: #E5CCBB; /* Warna sedikit lebih gelap saat hover */
+            background-color: #E5CCBB; /* Slightly darker on hover */
             color: #3C3C3C;
-            box_shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
             transform: translateY(-2px);
         }
         .block-container {
@@ -86,7 +85,7 @@ st.markdown("""
             color: #5A5A5A;
         }
         .st-emotion-cache-eczf16 { /* Expander header */
-            background-color: #D4A59A; /* Sama dengan sidebar untuk konsistensi */
+            background-color: #D4A59A; /* Same as sidebar for consistency */
             border-radius: 10px;
             padding: 0.75rem 1rem;
             margin-bottom: 10px;
@@ -123,7 +122,6 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # --- Define a single-hue pastel color sequence for Plotly charts ---
-# Urutan warna pastel dalam satu hue (oranye/coklat lembut)
 single_hue_pastel_colors = ["#F8E0CC", "#EEDDCB", "#E0CCBB", "#D4BBAC", "#C8AA9C", "#BBAA9B"]
 
 
@@ -226,12 +224,40 @@ def clean_and_preprocess_data(df):
 
     return df
 
+# --- AI Integration Function ---
+@st.cache_data(show_spinner="Kucing AI sedang berpikir... 🧠")
+def get_ai_insight(model_name, api_key, prompt_text, chart_data_str):
+    """
+    Generates AI insights using OpenRouter AI.
+    """
+    if not api_key:
+        return "Insight AI memerlukan OpenRouter API Key. Mohon masukkan di sidebar."
+
+    try:
+        client = OpenAI(
+            base_url="https://openrouter.ai/api/v1",
+            api_key=api_key,
+        )
+
+        response = client.chat.completions.create(
+            model=model_name,
+            messages=[
+                {"role": "system", "content": "You are a media intelligence expert. Provide concise and actionable insights (max 3 key insights) based on the provided data, relevant to media production or content strategy. Focus on key findings, emerging trends, or data anomalies."},
+                {"role": "user", "content": f"{prompt_text}\n\nData for analysis:\n{chart_data_str}"}
+            ],
+            temperature=0.7,
+            max_tokens=200,
+        )
+        return response.choices[0].message.content
+    except Exception as e:
+        return f"Meong! Gagal mendapatkan insight AI: {e}"
+
 # --- Application Header ---
 st.title("🐾 D.A.S.H: Data Analysis & Smart Highlighting 🐾")
 st.markdown("Selamat datang di papan kontrol intelijen media Anda! Unggah data Anda dan biarkan kucing-kucing kami menganalisisnya untuk insight media yang menggemaskan.")
 
 # --- How to Use Section ---
-with st.expander("🐾 Cara Menggunakan Dashboard Ini❓ 🐾"):
+with st.expander("❓ Cara Menggunakan Dashboard Ini 🐾"):
     st.markdown("""
     Dashboard **D.A.S.H (Data Analysis & Smart Highlighting)** dirancang untuk membantu Anda mendapatkan insight dari data media Anda dengan mudah. Ikuti langkah-langkah berikut untuk memulai:
 
@@ -244,20 +270,24 @@ with st.expander("🐾 Cara Menggunakan Dashboard Ini❓ 🐾"):
     2.  **Jelajahi Pratinjau Data:**
         * Setelah data berhasil dimuat dan dibersihkan, Anda akan melihat tabel "Pratinjau Data Kucing" yang menampilkan beberapa baris pertama dari dataset Anda. Ini memastikan data sudah siap untuk analisis.
 
-    3.  **Analisis Visualisasi Interaktif:**
+    3.  **Konfigurasi AI:**
+        * Di sidebar kiri, masukkan **OpenRouter API Key** Anda.
+        * Pilih model AI yang ingin Anda gunakan.
+
+    4.  **Analisis Visualisasi Interaktif:**
         * Gulir ke bawah untuk melihat berbagai chart interaktif yang menampilkan insight penting dari data Anda.
         * Setiap chart dirancang untuk memberikan gambaran cepat tentang aspek tertentu dari kinerja media Anda (misalnya, distribusi sentimen, tren engagement, kinerja platform).
         * Anda bisa mengarahkan kursor ke elemen-elemen chart untuk melihat detail lebih lanjut (fitur interaktif Plotly).
 
-    4.  **Dapatkan Insight dari Kucing AI:**
-        * Di bawah setiap chart, Anda akan menemukan bagian "Insight Kucing AI 💡" yang berisi rangkuman naratif dari temuan penting, tren yang muncul, atau anomali data. Insight ini dihasilkan oleh model AI untuk membantu Anda memahami data dengan lebih baik.
+    5.  **Dapatkan Insight dari Kucing AI:**
+        * Di bawah setiap chart, Anda akan menemukan bagian "Insight Kucing AI 💡" yang berisi rangkuman naratif dari temuan penting, tren yang muncul, atau anomali data. Insight ini dihasilkan secara dinamis oleh model AI yang Anda pilih.
 
-    5.  **Periksa Statistik Ringkas:**
+    6.  **Periksa Statistik Ringkas:**
         * Di sidebar kiri, Anda juga dapat melihat "Statistik Ringkas" yang menampilkan metrik-metrik penting seperti total engagement, jumlah platform unik, dan sentimen paling umum.
 
     Selamat menjelajahi dan semoga D.A.S.H membantu analisis media Anda! 🌟
     """)
-st.markdown("---") # Garis pemisah setelah expander
+st.markdown("---")
 
 # --- Bagian Unggah File CSV ---
 st.sidebar.header("Unggah Data Anda 😺")
@@ -268,16 +298,35 @@ if uploaded_file is not None:
     try:
         raw_data = pd.read_csv(uploaded_file)
         st.sidebar.success("Meong! File CSV berhasil diunggah.")
-        data = clean_and_preprocess_data(raw_data.copy()) # Kirim salinan untuk pembersihan
+        data = clean_and_preprocess_data(raw_data.copy())
         if data is None or data.empty:
             st.error("Meong! Data kosong atau tidak valid setelah pembersihan. Mohon periksa file CSV Anda.")
-            data = None # Pastikan data None jika kosong/tidak valid
+            data = None
     except Exception as e:
         st.error(f"Meong! Terjadi kesalahan saat memuat atau membersihkan file: {e}. Pastikan itu adalah CSV yang valid dan memiliki format kolom yang diharapkan.")
-        data = None # Reset data jika ada kesalahan
+        data = None
 else:
     st.sidebar.info("Tidak ada file yang diunggah. Menggunakan data sintetis untuk demo.")
     data = create_synthetic_data()
+
+# --- AI Configuration in Sidebar ---
+st.sidebar.header("Konfigurasi AI 🧠")
+# API Key from Streamlit Secrets (recommended for deployment) or direct input
+openrouter_api_key = st.sidebar.text_input(
+    "OpenRouter API Key",
+    type="password",
+    help="Dapatkan kunci API Anda dari OpenRouter.ai (gratis untuk sebagian besar model).",
+    value=st.secrets.get("OPENROUTER_API_KEY", "") # Mengambil dari st.secrets jika ada
+)
+if not openrouter_api_key:
+    st.sidebar.warning("Masukkan OpenRouter API Key Anda di atas untuk mengaktifkan insight AI.")
+
+# Dropdown untuk memilih model AI (contoh model yang tersedia di OpenRouter)
+ai_model = st.sidebar.selectbox(
+    "Pilih Model AI",
+    ["google/gemini-pro", "openai/gpt-3.5-turbo", "mistralai/mistral-7b-instruct"], # Contoh model
+    help="Pilih model AI yang akan digunakan untuk menghasilkan insight. Model 'google/gemini-pro' atau 'openai/gpt-3.5-turbo' disarankan."
+)
 
 # Tampilkan pratinjau data
 if data is not None and not data.empty:
@@ -295,34 +344,45 @@ if data is not None and not data.empty:
     sentiment_counts.columns = ["Sentimen", "Jumlah"]
     fig_sentiment = px.pie(sentiment_counts, values="Jumlah", names="Sentimen",
                            title="Distribusi Sentimen Terhadap Topik",
-                           color_discrete_sequence=single_hue_pastel_colors) # Menggunakan palet satu hue
+                           color_discrete_sequence=single_hue_pastel_colors)
     fig_sentiment.update_traces(textposition="inside", textinfo="percent+label")
     st.plotly_chart(fig_sentiment, use_container_width=True)
     st.markdown("#### Insight Kucing AI 💡")
-    st.info("""
-    - Mayoritas sentimen terhadap merek/kampanye ini adalah **Positif**. Ini menunjukkan penerimaan publik yang baik.
-    - Sentimen **Negatif** berada pada persentase kecil, namun perlu dipantau untuk mengidentifikasi penyebabnya.
-    - Sentimen **Netral** bisa menjadi peluang untuk mengkonversi audiens dengan konten yang lebih menarik.
-    """)
+    
+    # Prompt Engineering for Sentiment Breakdown
+    prompt_sentiment = (
+        "Analyze the sentiment distribution data provided below. "
+        "Provide 3 concise and actionable key insights relevant to media production or content strategy. "
+        "Highlight the dominant sentiment, implications of negative sentiment, and opportunities related to neutral sentiment. "
+        "Format insights as a bulleted list."
+    )
+    sentiment_data_str = sentiment_counts.to_string(index=False)
+    ai_insight_sentiment = get_ai_insight(ai_model, openrouter_api_key, prompt_sentiment, sentiment_data_str)
+    st.info(ai_insight_sentiment)
     st.markdown("---")
 
     # 2. Engagement Trend Over Time
     st.subheader("2. Tren Engagement dari Waktu ke Waktu 🐾")
-    # Agregasi data per hari untuk tren engagement
     data["Date_Day"] = data["Date"].dt.date
     daily_engagement = data.groupby("Date_Day")["Engagements"].sum().reset_index()
     fig_engagement_trend = px.line(daily_engagement, x="Date_Day", y="Engagements",
                                    title="Tren Total Engagement Harian",
-                                   color_discrete_sequence=[single_hue_pastel_colors[0]]) # Menggunakan warna pertama dari palet
+                                   color_discrete_sequence=[single_hue_pastel_colors[0]])
     fig_engagement_trend.update_xaxes(title_text="Tanggal")
     fig_engagement_trend.update_yaxes(title_text="Total Engagement")
     st.plotly_chart(fig_engagement_trend, use_container_width=True)
     st.markdown("#### Insight Kucing AI 💡")
-    st.info("""
-    - Terlihat puncak engagement pada tanggal-tanggal tertentu, yang mungkin berkorelasi dengan peluncuran kampanye atau peristiwa khusus.
-    - Adanya penurunan engagement setelah periode puncak menunjukkan perlunya strategi konten berkelanjutan.
-    - Fluktuasi harian yang signifikan bisa menandakan sensitivitas audiens terhadap berita atau tren terbaru.
-    """)
+
+    # Prompt Engineering for Engagement Trend
+    prompt_engagement_trend = (
+        "Analyze the daily engagement trend data. "
+        "Provide 3 concise and actionable key insights for media content strategy. "
+        "Identify significant peaks or drops, discuss potential causes, and suggest actions for consistent engagement. "
+        "Focus on content performance over time. Format insights as a bulleted list."
+    )
+    engagement_trend_data_str = daily_engagement.to_string(index=False)
+    ai_insight_engagement_trend = get_ai_insight(ai_model, openrouter_api_key, prompt_engagement_trend, engagement_trend_data_str)
+    st.info(ai_insight_engagement_trend)
     st.markdown("---")
 
     # 3. Platform Engagements
@@ -332,16 +392,22 @@ if data is not None and not data.empty:
     fig_platform_engagement = px.bar(platform_engagement, x="Platform", y="Engagements",
                                       title="Total Engagement per Platform",
                                       color="Platform",
-                                      color_discrete_sequence=single_hue_pastel_colors) # Menggunakan palet satu hue
+                                      color_discrete_sequence=single_hue_pastel_colors)
     fig_platform_engagement.update_xaxes(title_text="Platform")
     fig_platform_engagement.update_yaxes(title_text="Total Engagement")
     st.plotly_chart(fig_platform_engagement, use_container_width=True)
     st.markdown("#### Insight Kucing AI 💡")
-    st.info("""
-    - **X/Twitter** dan **Instagram** menunjukkan engagement tertinggi, mengindikasikan platform-platform ini paling efektif untuk menjangkau audiens.
-    - **News Portal** memiliki engagement yang solid, menunjukkan bahwa berita dan artikel masih relevan bagi audiens.
-    - Platform dengan engagement rendah mungkin memerlukan evaluasi ulang strategi atau fokus pada tipe konten yang berbeda.
-    """)
+
+    # Prompt Engineering for Platform Engagements
+    prompt_platform_engagement = (
+        "Analyze the engagement performance across different platforms. "
+        "Provide 3 concise and actionable key insights for platform-specific content strategy. "
+        "Identify top-performing platforms, underperforming ones, and suggest content adaptations for each. "
+        "Format insights as a bulleted list."
+    )
+    platform_engagement_data_str = platform_engagement.to_string(index=False)
+    ai_insight_platform_engagement = get_ai_insight(ai_model, openrouter_api_key, prompt_platform_engagement, platform_engagement_data_str)
+    st.info(ai_insight_platform_engagement)
     st.markdown("---")
 
     # 4. Media Type Mix
@@ -350,15 +416,21 @@ if data is not None and not data.empty:
     media_type_counts.columns = ["Tipe Media", "Jumlah"]
     fig_media_type_mix = px.pie(media_type_counts, values="Jumlah", names="Tipe Media",
                                 title="Proporsi Tipe Media",
-                                color_discrete_sequence=single_hue_pastel_colors) # Menggunakan palet satu hue
+                                color_discrete_sequence=single_hue_pastel_colors)
     fig_media_type_mix.update_traces(textposition="inside", textinfo="percent+label")
     st.plotly_chart(fig_media_type_mix, use_container_width=True)
     st.markdown("#### Insight Kucing AI 💡")
-    st.info("""
-    - Konten **Video** dan **Image** mendominasi proporsi media, menunjukkan preferensi audiens terhadap format visual.
-    - Meskipun **Text** memiliki proporsi lebih kecil, perannya dalam menyampaikan informasi mendalam tetap krusial.
-    - **Infographic** sebagai tipe media yang sedang berkembang dapat ditingkatkan untuk menyajikan data kompleks secara visual.
-    """)
+
+    # Prompt Engineering for Media Type Mix
+    prompt_media_type_mix = (
+        "Analyze the proportion of different media types in the content. "
+        "Provide 3 concise and actionable key insights relevant to content format preferences. "
+        "Highlight dominant media types, suggest opportunities for less used types, and discuss content format strategy. "
+        "Format insights as a bulleted list."
+    )
+    media_type_data_str = media_type_counts.to_string(index=False)
+    ai_insight_media_type_mix = get_ai_insight(ai_model, openrouter_api_key, prompt_media_type_mix, media_type_data_str)
+    st.info(ai_insight_media_type_mix)
     st.markdown("---")
 
     # 5. Top 5 Locations by Engagement
@@ -368,23 +440,28 @@ if data is not None and not data.empty:
     fig_top_locations = px.bar(top_5_locations, x="Location", y="Engagements",
                                 title="Top 5 Lokasi Berdasarkan Total Engagement",
                                 color="Location",
-                                color_discrete_sequence=single_hue_pastel_colors) # Menggunakan palet satu hue
+                                color_discrete_sequence=single_hue_pastel_colors)
     fig_top_locations.update_xaxes(title_text="Lokasi")
     fig_top_locations.update_yaxes(title_text="Total Engagement")
     st.plotly_chart(fig_top_locations, use_container_width=True)
     st.markdown("#### Insight Kucing AI 💡")
-    st.info("""
-    - **Jakarta** dan **Surabaya** secara konsisten menunjukkan engagement tertinggi, menjadikannya target utama untuk kampanye lokal.
-    - Memahami demografi dan preferensi di lokasi teratas ini dapat mengoptimalkan strategi konten.
-    - Adanya lokasi-lokasi lain dalam Top 5 menunjukkan potensi pasar yang bisa dieksplorasi lebih lanjut.
-    """)
+
+    # Prompt Engineering for Top 5 Locations
+    prompt_top_locations = (
+        "Analyze the top 5 geographical locations by engagement. "
+        "Provide 3 concise and actionable key insights relevant to audience targeting or local content production. "
+        "Identify the most engaged regions, discuss potential reasons for their high engagement, and suggest localized strategies. "
+        "Format insights as a bulleted list."
+    )
+    top_locations_data_str = top_5_locations.to_string(index=False)
+    ai_insight_top_locations = get_ai_insight(ai_model, openrouter_api_key, prompt_top_locations, top_locations_data_str)
+    st.info(ai_insight_top_locations)
     st.markdown("---")
 
     # Tambahkan metrik umum di sidebar
     st.sidebar.subheader("Statistik Ringkas 📈")
     total_engagement = data["Engagements"].sum()
     unique_platforms = data["Platform"].nunique()
-    # Pastikan data['Sentiment'] tidak kosong sebelum mode() dipanggil
     if not data['Sentiment'].empty:
         most_common_sentiment = data["Sentiment"].mode()[0]
     else:
