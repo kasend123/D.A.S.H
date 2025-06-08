@@ -14,11 +14,13 @@ Fitur-Fitur Utama Aplikasi Dashboard
 - Unggah Data CSV: Pengguna dapat dengan mudah mengunggah file CSV mereka sendiri untuk analisis data yang dipersonalisasi. Aplikasi dilengkapi dengan pra-pemrosesan data untuk menangani format kolom dan nilai yang hilang.
 - Panduan Penggunaan Interaktif: Tersedia bagian "Cara Menggunakan Dashboard Ini" yang bisa diperluas untuk panduan langkah demi langkah.
 - Visualisasi Data Interaktif: Menyajikan minimal 5 chart interaktif menggunakan Plotly untuk insight media yang mendalam:
-                            - Sentiment Breakdown: Distribusi sentimen (Positif/Negatif/Netral).
-                            - Engagement Trend Over Time: Fluktuasi engagement konten dari waktu ke waktu.
-                            - Platform Engagements: Perbandingan kinerja engagement di berbagai platform.
-                            - Media Type Mix: Analisis proporsi tipe media (Teks, Gambar, Video, Infografis, Carousel).
-                            - Top 5 Locations by Engagement: Identifikasi lokasi geografis dengan engagement tertinggi.
+
+  - Sentiment Breakdown: Distribusi sentimen (Positif/Negatif/Netral).
+  - Engagement Trend Over Time: Fluktuasi engagement konten dari waktu ke waktu.
+  - Platform Engagements: Perbandingan kinerja engagement di berbagai platform.
+  - Media Type Mix: Analisis proporsi tipe media (Teks, Gambar, Video, Infografis, Carousel).
+  - Top 5 Locations by Engagement: Identifikasi lokasi geografis dengan engagement tertinggi.
+    
 - Insight Naratif Bertenaga AI: Setiap chart dilengkapi dengan setidaknya 3 insight kunci yang dihasilkan secara dinamis oleh model AI (melalui integrasi OpenRouter AI). Ini memberikan interpretasi data yang mendalam dan relevan.
 - Pilihan Model AI: Pengguna dapat memilih model AI yang berbeda dari OpenRouter melalui sidebar untuk personalisasi insight.
 - Unduh Laporan PDF: Kemampuan untuk mengunduh laporan PDF ringkas yang berisi semua visualisasi kunci dan insight naratif yang dihasilkan AI.
@@ -49,12 +51,12 @@ fpdf
 
 Kemudian instal:
 pip install -r requirements.txt
+
 Konfigurasi OpenRouter API Key:
-Dapatkan kunci API Anda dari OpenRouter.ai.
-Buat folder .streamlit di direktori root proyek Anda.
-Di dalam .streamlit, buat file secrets.toml dan tambahkan baris berikut (ganti dengan kunci Anda yang sebenarnya):
-OPENROUTER_API_KEY = "sk-YOUR_ACTUAL_OPENROUTER_API_KEY_HERE"
-Atau, Anda bisa memasukkan kunci API langsung di kolom input pada sidebar aplikasi saat menjalankannya secara lokal.
+- Dapatkan kunci API Anda dari OpenRouter.ai.
+- Buat folder .streamlit di direktori root proyek Anda.
+- Di dalam .streamlit, buat file secrets.toml dan tambahkan baris berikut (ganti dengan kunci Anda yang sebenarnya):
+- OPENROUTER_API_KEY = "sk-YOUR_ACTUAL_OPENROUTER_API_KEY_HERE" Atau, Anda bisa memasukkan kunci API langsung di kolom input pada sidebar aplikasi saat menjalankannya secara lokal.
 
 Jalankan Aplikasi Streamlit:
 streamlit run app.py
