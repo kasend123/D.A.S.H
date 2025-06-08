@@ -27,20 +27,20 @@ Fitur-Fitur Utama Aplikasi Dashboard
 - Desain Responsif: Memastikan tampilan yang optimal di berbagai ukuran layar dan perangkat.
 
 Tech Stack yang Digunakan
-Framework Aplikasi Web: Streamlit
-Analisis Data: Pandas
-Visualisasi Data Interaktif: Plotly Express
-Pembangkitan Data Sintetis: NumPy
-Integrasi AI (LLM): OpenAI SDK untuk mengakses OpenRouter AI
-Pembuatan Laporan PDF: fpdf2 (FPDF)
-Manajemen Kode Sumber: GitHub
-Deployment Aplikasi: Streamlit Community Cloud
+- Framework Aplikasi Web: Streamlit
+- Analisis Data: Pandas
+- Visualisasi Data Interaktif: Plotly Express
+- Pembangkitan Data Sintetis: NumPy
+- Integrasi AI (LLM): OpenAI SDK untuk mengakses OpenRouter AI
+- Pembuatan Laporan PDF: fpdf2 (FPDF)
+- Manajemen Kode Sumber: GitHub
+- Deployment Aplikasi: Streamlit Community Cloud
 
 Cara Menjalankan Aplikasi (Lokal)
-Kloning Repositori:
+1. Kloning Repositori:
 git clone https://github.com/kasend123/D.A.S.H
 
-Instal Dependensi:
+2. Instal Dependensi:
 Pastikan file requirements.txt Anda berisi semua library yang dibutuhkan:
 streamlit
 pandas
@@ -49,7 +49,7 @@ numpy
 openai
 fpdf
 
-Kemudian instal:
+3. Kemudian instal:
 pip install -r requirements.txt
 
 Konfigurasi OpenRouter API Key:
