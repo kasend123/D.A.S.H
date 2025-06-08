@@ -145,8 +145,76 @@ def create_synthetic_data(num_rows=1000):
     })
     return data
 
+# --- Fungsi untuk Pembersihan dan Pra-pemrosesan Data ---
+def clean_and_preprocess_data(df):
+    """
+    Melakukan pembersihan dan pra-pemrosesan pada DataFrame yang diunggah.
+    """
+    original_rows = len(df)
+    st.sidebar.markdown("---")
+    st.sidebar.subheader("Status Pembersihan Data 🧹")
+    cleaning_messages = []
+
+    # Definisikan kolom-kolom esensial yang diharapkan
+    essential_columns = ["Tanggal", "Platform", "Sentimen", "Lokasi", "Engagement", "Tipe Media"]
+    missing_columns = [col for col in essential_columns if col not in df.columns]
+
+    if missing_columns:
+        st.error(f"Meong! Kolom esensial berikut tidak ditemukan dalam file Anda: {', '.join(missing_columns)}. "
+                 f"Pastikan CSV Anda memiliki kolom-kolom ini.")
+        return None # Mengembalikan None jika ada kolom esensial yang hilang
+
+    # 1. Pastikan kolom 'Tanggal' dalam format datetime dan hapus baris yang tidak valid
+    if "Tanggal" in df.columns:
+        initial_invalid_dates = df["Tanggal"].isnull().sum() # Hitung NaNs sebelum konversi
+        df["Tanggal"] = pd.to_datetime(df["Tanggal"], errors='coerce')
+        # Hitung NaNs setelah konversi, ini adalah jumlah baris yang tidak bisa dikonversi
+        converted_invalid_dates = df["Tanggal"].isnull().sum()
+        if converted_invalid_dates > initial_invalid_dates: # Hanya log jika ada yang baru menjadi NaT
+            cleaning_messages.append(f"- Menghapus {converted_invalid_dates - initial_invalid_dates} baris dengan format 'Tanggal' yang tidak valid.")
+        df.dropna(subset=["Tanggal"], inplace=True)
+    else:
+        st.error("Meong! Kolom 'Tanggal' tidak ditemukan.")
+        return None
+
+    # 2. Pastikan kolom 'Engagement' adalah numerik
+    if "Engagement" in df.columns:
+        df["Engagement"] = pd.to_numeric(df["Engagement"], errors='coerce')
+        if df["Engagement"].isnull().any():
+            nan_engagement_count = df["Engagement"].isnull().sum()
+            cleaning_messages.append(f"- Menghapus {nan_engagement_count} baris dengan nilai 'Engagement' yang tidak valid.")
+            df.dropna(subset=["Engagement"], inplace=True)
+    else:
+        st.error("Meong! Kolom 'Engagement' tidak ditemukan.")
+        return None
+
+    # 3. Tangani nilai yang hilang di kolom-kolom kategorikal (opsional: mengisi dengan 'Unknown')
+    categorical_columns = ["Platform", "Sentimen", "Lokasi", "Tipe Media"]
+    for col in categorical_columns:
+        if col in df.columns and df[col].isnull().any():
+            initial_nan_count = df[col].isnull().sum()
+            df.dropna(subset=[col], inplace=True) # Untuk sementara, drop saja untuk memastikan visualisasi berjalan
+            cleaning_messages.append(f"- Menghapus {initial_nan_count} baris dengan nilai kosong di kolom '{col}'.")
+    
+    # 4. Filter data jika ada tanggal di masa depan (jika relevan)
+    # df = df[df["Tanggal"] <= pd.to_datetime("today")]
+
+    processed_rows = len(df)
+    if processed_rows < original_rows:
+        st.sidebar.warning(f"Meong! {original_rows - processed_rows} baris dihapus selama pembersihan.")
+    else:
+        st.sidebar.success("Meong! Tidak ada baris yang dihapus selama pembersihan (atau sudah bersih).")
+    
+    if cleaning_messages:
+        for msg in cleaning_messages:
+            st.sidebar.markdown(msg)
+    else:
+        st.sidebar.info("- Data terlihat bersih, tidak ada pembersihan signifikan yang diperlukan.")
+
+    return df
+
 # --- Header Aplikasi ---
-st.title("🐾 Papan Kontrol Intelijen Media Kucing 🐾")
+st.title("🐾 D.A.S.H: Data Analysis & Smart Highlighting 🐾")
 st.markdown("Selamat datang di papan kontrol intelijen media Anda! Unggah data Anda dan biarkan kucing-kucing kami menganalisisnya untuk insight media yang menggemaskan.")
 
 # --- Bagian Unggah File CSV ---
@@ -155,16 +223,15 @@ uploaded_file = st.sidebar.file_uploader("Pilih file CSV", type=["csv"])
 
 data = None
 if uploaded_file is not None:
-    # Memuat data dari file yang diunggah
-    st.sidebar.success("Meong! Data berhasil diunggah.")
     try:
-        data = pd.read_csv(uploaded_file)
-        # Pastikan kolom Tanggal dalam format datetime
-        data["Tanggal"] = pd.to_datetime(data["Tanggal"], errors='coerce')
-        # Hapus baris dengan Tanggal yang tidak valid setelah konversi
-        data.dropna(subset=["Tanggal"], inplace=True)
+        raw_data = pd.read_csv(uploaded_file)
+        st.sidebar.success("Meong! File CSV berhasil diunggah.")
+        data = clean_and_preprocess_data(raw_data.copy()) # Kirim salinan untuk pembersihan
+        if data is None or data.empty:
+            st.error("Meong! Data kosong atau tidak valid setelah pembersihan. Mohon periksa file CSV Anda.")
+            data = None # Pastikan data None jika kosong/tidak valid
     except Exception as e:
-        st.error(f"Meong! Terjadi kesalahan saat memuat file: {e}. Pastikan itu adalah CSV yang valid.")
+        st.error(f"Meong! Terjadi kesalahan saat memuat atau membersihkan file: {e}. Pastikan itu adalah CSV yang valid.")
         data = None # Reset data jika ada kesalahan
 else:
     st.sidebar.info("Tidak ada file yang diunggah. Menggunakan data sintetis untuk demo.")
@@ -275,7 +342,11 @@ if data is not None and not data.empty:
     st.sidebar.subheader("Statistik Ringkas 📈")
     total_engagement = data["Engagement"].sum()
     unique_platforms = data["Platform"].nunique()
-    most_common_sentiment = data["Sentimen"].mode()[0]
+    # Pastikan data['Sentimen'] tidak kosong sebelum mode() dipanggil
+    if not data['Sentimen'].empty:
+        most_common_sentiment = data["Sentimen"].mode()[0]
+    else:
+        most_common_sentiment = "Tidak Ada Data Sentimen"
 
     st.sidebar.markdown(f"""
         <div class="metric-container">
@@ -293,7 +364,7 @@ if data is not None and not data.empty:
     """, unsafe_allow_html=True)
 
 else:
-    st.warning("Mohon unggah file CSV atau tunggu data sintetis dimuat untuk melihat dashboard.")
+    st.warning("Mohon unggah file CSV yang valid atau tunggu data sintetis dimuat untuk melihat dashboard.")
 
 # --- Footer ---
 st.markdown("---")
