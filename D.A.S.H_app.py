@@ -139,12 +139,12 @@ def create_synthetic_data(num_rows=1000):
 
 
     data = pd.DataFrame({
-        "Date": dates, # Diubah dari "Tanggal" menjadi "Date"
+        "Date": dates,
         "Platform": platforms,
-        "Sentiment": sentiments, # Diubah dari "Sentimen" menjadi "Sentiment"
+        "Sentiment": sentiments,
         "Location": locations,
-        "Engagements": engagement, # Diubah dari "Engagement" menjadi "Engagements"
-        "Media_Type": media_types, # Diubah dari "Tipe Media" menjadi "Media_Type"
+        "Engagements": engagement,
+        "Media_Type": media_types,
         "Influencer_Brand": influencer_brand,
         "Post_Type": post_type
     })
@@ -198,12 +198,10 @@ def clean_and_preprocess_data(df):
         return None
 
     # 3. Tangani nilai yang hilang di kolom-kolom kategorikal (opsional: mengisi dengan 'Unknown')
-    categorical_columns = ["Platform", "Sentiment", "Location", "Media_Type"] # Diubah dari "Sentimen" dan "Tipe Media"
+    categorical_columns = ["Platform", "Sentiment", "Location", "Media_Type"]
     for col in categorical_columns:
         if col in df.columns and df[col].isnull().any():
             initial_nan_count = df[col].isnull().sum()
-            # st.sidebar.info(f"Mengisi {initial_nan_count} nilai kosong di '{col}' dengan 'Unknown'.")
-            # df[col].fillna("Unknown", inplace=True) # Mengisi dengan 'Unknown'
             df.dropna(subset=[col], inplace=True) # Untuk sementara, drop saja untuk memastikan visualisasi berjalan
             cleaning_messages.append(f"- Menghapus {initial_nan_count} baris dengan nilai kosong di kolom '{col}'.")
     
@@ -260,7 +258,7 @@ if data is not None and not data.empty:
 
     # 1. Sentiment Breakdown
     st.subheader("1. Sebaran Sentimen (Sentiment Breakdown) 😽")
-    sentiment_counts = data["Sentiment"].value_counts().reset_index() # Menggunakan "Sentiment"
+    sentiment_counts = data["Sentiment"].value_counts().reset_index()
     sentiment_counts.columns = ["Sentimen", "Jumlah"]
     fig_sentiment = px.pie(sentiment_counts, values="Jumlah", names="Sentimen",
                            title="Distribusi Sentimen Terhadap Topik",
@@ -278,9 +276,9 @@ if data is not None and not data.empty:
     # 2. Engagement Trend Over Time
     st.subheader("2. Tren Engagement dari Waktu ke Waktu 🐾")
     # Agregasi data per hari untuk tren engagement
-    data["Date_Day"] = data["Date"].dt.date # Menggunakan "Date"
-    daily_engagement = data.groupby("Date_Day")["Engagements"].sum().reset_index() # Menggunakan "Engagements"
-    fig_engagement_trend = px.line(daily_engagement, x="Date_Day", y="Engagements", # Menggunakan "Date_Day" dan "Engagements"
+    data["Date_Day"] = data["Date"].dt.date
+    daily_engagement = data.groupby("Date_Day")["Engagements"].sum().reset_index()
+    fig_engagement_trend = px.line(daily_engagement, x="Date_Day", y="Engagements",
                                    title="Tren Total Engagement Harian",
                                    color_discrete_sequence=["#FFDAB9"]) # Warna pastel orange
     fig_engagement_trend.update_xaxes(title_text="Tanggal")
@@ -296,9 +294,9 @@ if data is not None and not data.empty:
 
     # 3. Platform Engagements
     st.subheader("3. Engagement Berdasarkan Platform 😺")
-    platform_engagement = data.groupby("Platform")["Engagements"].sum().reset_index() # Menggunakan "Engagements"
-    platform_engagement = platform_engagement.sort_values(by="Engagements", ascending=False) # Menggunakan "Engagements"
-    fig_platform_engagement = px.bar(platform_engagement, x="Platform", y="Engagements", # Menggunakan "Engagements"
+    platform_engagement = data.groupby("Platform")["Engagements"].sum().reset_index()
+    platform_engagement = platform_engagement.sort_values(by="Engagements", ascending=False)
+    fig_platform_engagement = px.bar(platform_engagement, x="Platform", y="Engagements",
                                       title="Total Engagement per Platform",
                                       color="Platform",
                                       color_discrete_sequence=px.colors.qualitative.Pastel)
@@ -315,7 +313,7 @@ if data is not None and not data.empty:
 
     # 4. Media Type Mix
     st.subheader("4. Komposisi Tipe Media 😻")
-    media_type_counts = data["Media_Type"].value_counts().reset_index() # Menggunakan "Media_Type"
+    media_type_counts = data["Media_Type"].value_counts().reset_index()
     media_type_counts.columns = ["Tipe Media", "Jumlah"]
     fig_media_type_mix = px.pie(media_type_counts, values="Jumlah", names="Tipe Media",
                                 title="Proporsi Tipe Media",
@@ -332,9 +330,9 @@ if data is not None and not data.empty:
 
     # 5. Top 5 Locations by Engagement
     st.subheader("5. 5 Lokasi Teratas Berdasarkan Engagement 🌍")
-    location_engagement = data.groupby("Location")["Engagements"].sum().reset_index() # Menggunakan "Location" dan "Engagements"
-    top_5_locations = location_engagement.sort_values(by="Engagements", ascending=False).head(5) # Menggunakan "Engagements"
-    fig_top_locations = px.bar(top_5_locations, x="Location", y="Engagements", # Menggunakan "Location" dan "Engagements"
+    location_engagement = data.groupby("Location")["Engagements"].sum().reset_index()
+    top_5_locations = location_engagement.sort_values(by="Engagements", ascending=False).head(5)
+    fig_top_locations = px.bar(top_5_locations, x="Location", y="Engagements",
                                 title="Top 5 Lokasi Berdasarkan Total Engagement",
                                 color="Location",
                                 color_discrete_sequence=px.colors.qualitative.Pastel)
@@ -351,11 +349,11 @@ if data is not None and not data.empty:
 
     # Tambahkan metrik umum di sidebar
     st.sidebar.subheader("Statistik Ringkas 📈")
-    total_engagement = data["Engagements"].sum() # Menggunakan "Engagements"
+    total_engagement = data["Engagements"].sum()
     unique_platforms = data["Platform"].nunique()
     # Pastikan data['Sentiment'] tidak kosong sebelum mode() dipanggil
-    if not data['Sentiment'].empty: # Menggunakan "Sentiment"
-        most_common_sentiment = data["Sentiment"].mode()[0] # Menggunakan "Sentiment"
+    if not data['Sentiment'].empty:
+        most_common_sentiment = data["Sentiment"].mode()[0]
     else:
         most_common_sentiment = "Tidak Ada Data Sentimen"
 
