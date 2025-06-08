@@ -3,6 +3,7 @@ import pandas as pd
 import plotly.express as px
 import numpy as np
 from openai import OpenAI # Import OpenAI SDK
+from fpdf import FPDF # Import FPDF untuk membuat PDF
 
 # --- Konfigurasi Halaman Streamlit ---
 st.set_page_config(
@@ -231,7 +232,7 @@ def get_ai_insight(model_name, api_key, prompt_text, chart_data_str):
     Generates AI insights using OpenRouter AI.
     """
     if not api_key:
-        return "Insight AI memerlukan OpenRouter API Key. Mohon masukkan di sidebar."
+        return "Insight AI requires OpenRouter API Key. Please enter it in the sidebar."
 
     try:
         client = OpenAI(
@@ -242,7 +243,7 @@ def get_ai_insight(model_name, api_key, prompt_text, chart_data_str):
         response = client.chat.completions.create(
             model=model_name,
             messages=[
-                {"role": "system", "content": "You are a media intelligence expert. Provide concise and actionable insights (max 3 key insights) based on the provided data, relevant to media production or content strategy. Focus on key findings, emerging trends, or data anomalies."},
+                {"role": "system", "content": "You are a media intelligence expert. Provide concise and actionable insights (max 3 key insights) based on the provided data, relevant to media production or content strategy. Focus on key findings, emerging trends, or data anomalies. Output should be a bulleted list."},
                 {"role": "user", "content": f"{prompt_text}\n\nData for analysis:\n{chart_data_str}"}
             ],
             temperature=0.7,
@@ -250,7 +251,65 @@ def get_ai_insight(model_name, api_key, prompt_text, chart_data_str):
         )
         return response.choices[0].message.content
     except Exception as e:
-        return f"Meong! Gagal mendapatkan insight AI: {e}"
+        return f"Meong! Failed to get AI insight: {e}"
+
+# --- Function to Generate PDF Report ---
+def generate_pdf_report(data, insights):
+    """
+    Generates a PDF report containing dashboard overview and AI insights.
+    """
+    pdf = FPDF()
+    pdf.add_page()
+    pdf.set_font("Arial", "B", 16)
+    pdf.cell(0, 10, "Laporan Intelijen Media D.A.S.H", 0, 1, "C")
+    pdf.set_font("Arial", "", 12)
+    pdf.ln(10)
+    pdf.multi_cell(0, 10, "Laporan ini merangkum analisis data media dari dashboard D.A.S.H, termasuk visualisasi kunci dan insight yang dihasilkan AI.")
+    pdf.ln(10)
+
+    # Section for overall statistics
+    pdf.set_font("Arial", "B", 14)
+    pdf.cell(0, 10, "Statistik Ringkas:", 0, 1, "L")
+    pdf.set_font("Arial", "", 12)
+    
+    # Calculate stats from data
+    total_engagement = data["Engagements"].sum()
+    unique_platforms = data["Platform"].nunique()
+    most_common_sentiment = data["Sentiment"].mode()[0] if not data["Sentiment"].empty else "Tidak Ada Data Sentimen"
+    
+    pdf.multi_cell(0, 7, f"- Total Engagement: {total_engagement:,}")
+    pdf.multi_cell(0, 7, f"- Platform Unik: {unique_platforms}")
+    pdf.multi_cell(0, 7, f"- Sentimen Paling Umum: {most_common_sentiment}")
+    pdf.ln(10)
+
+    # Sections for each visualization and its AI insights
+    charts_and_insights_mapping = {
+        "Sebaran Sentimen (Sentiment Breakdown)": insights.get("sentiment", "Tidak ada insight."),
+        "Tren Engagement dari Waktu ke Waktu": insights.get("engagement_trend", "Tidak ada insight."),
+        "Engagement Berdasarkan Platform": insights.get("platform_engagement", "Tidak ada insight."),
+        "Komposisi Tipe Media": insights.get("media_type_mix", "Tidak ada insight."),
+        "5 Lokasi Teratas Berdasarkan Engagement": insights.get("top_locations", "Tidak ada insight."),
+    }
+
+    for title, insight_text in charts_and_insights_mapping.items():
+        pdf.set_font("Arial", "B", 14)
+        pdf.cell(0, 10, f"Visualisasi: {title}", 0, 1, "L")
+        pdf.set_font("Arial", "", 12)
+        pdf.multi_cell(0, 7, "Insight AI:")
+        if isinstance(insight_text, str) and insight_text.strip() and "Meong! Failed to get AI insight" not in insight_text:
+            # Add some padding or formatting for insights
+            pdf.set_left_margin(pdf.get_x() + 10) # Indent
+            # FPDF has basic text rendering. Bullet points might need manual handling if the AI generates unicode bullets.
+            # For simplicity, just print the text.
+            pdf.multi_cell(0, 7, insight_text)
+            pdf.set_left_margin(10) # Reset indent
+        else:
+            pdf.multi_cell(0, 7, "Tidak ada insight AI yang tersedia atau ada kesalahan dalam menghasilkan insight.")
+        pdf.ln(10)
+
+    # Output the PDF as bytes
+    return pdf.output(dest='S').encode('latin-1') # Use latin-1 for byte representation
+
 
 # --- Application Header ---
 st.title("🐾 D.A.S.H: Data Analysis & Smart Highlighting 🐾")
@@ -311,22 +370,23 @@ else:
 
 # --- AI Configuration in Sidebar ---
 st.sidebar.header("Konfigurasi AI 🧠")
-# API Key from Streamlit Secrets (recommended for deployment) or direct input
 openrouter_api_key = st.sidebar.text_input(
     "OpenRouter API Key",
     type="password",
     help="Dapatkan kunci API Anda dari OpenRouter.ai (gratis untuk sebagian besar model).",
-    value=st.secrets.get("OPENROUTER_API_KEY", "") # Mengambil dari st.secrets jika ada
+    value=st.secrets.get("OPENROUTER_API_KEY", "")
 )
 if not openrouter_api_key:
     st.sidebar.warning("Masukkan OpenRouter API Key Anda di atas untuk mengaktifkan insight AI.")
 
-# Dropdown untuk memilih model AI (contoh model yang tersedia di OpenRouter)
 ai_model = st.sidebar.selectbox(
     "Pilih Model AI",
-    ["google/gemini-pro", "openai/gpt-3.5-turbo", "mistralai/mistral-7b-instruct"], # Contoh model
+    ["google/gemini-pro", "openai/gpt-3.5-turbo", "mistralai/mistral-7b-instruct"],
     help="Pilih model AI yang akan digunakan untuk menghasilkan insight. Model 'google/gemini-pro' atau 'openai/gpt-3.5-turbo' disarankan."
 )
+
+# Initialize a dictionary to store all AI insights
+all_insights = {}
 
 # Tampilkan pratinjau data
 if data is not None and not data.empty:
@@ -349,7 +409,6 @@ if data is not None and not data.empty:
     st.plotly_chart(fig_sentiment, use_container_width=True)
     st.markdown("#### Insight Kucing AI 💡")
     
-    # Prompt Engineering for Sentiment Breakdown
     prompt_sentiment = (
         "Analyze the sentiment distribution data provided below. "
         "Provide 3 concise and actionable key insights relevant to media production or content strategy. "
@@ -359,6 +418,7 @@ if data is not None and not data.empty:
     sentiment_data_str = sentiment_counts.to_string(index=False)
     ai_insight_sentiment = get_ai_insight(ai_model, openrouter_api_key, prompt_sentiment, sentiment_data_str)
     st.info(ai_insight_sentiment)
+    all_insights["sentiment"] = ai_insight_sentiment # Store insight
     st.markdown("---")
 
     # 2. Engagement Trend Over Time
@@ -373,7 +433,6 @@ if data is not None and not data.empty:
     st.plotly_chart(fig_engagement_trend, use_container_width=True)
     st.markdown("#### Insight Kucing AI 💡")
 
-    # Prompt Engineering for Engagement Trend
     prompt_engagement_trend = (
         "Analyze the daily engagement trend data. "
         "Provide 3 concise and actionable key insights for media content strategy. "
@@ -383,6 +442,7 @@ if data is not None and not data.empty:
     engagement_trend_data_str = daily_engagement.to_string(index=False)
     ai_insight_engagement_trend = get_ai_insight(ai_model, openrouter_api_key, prompt_engagement_trend, engagement_trend_data_str)
     st.info(ai_insight_engagement_trend)
+    all_insights["engagement_trend"] = ai_insight_engagement_trend # Store insight
     st.markdown("---")
 
     # 3. Platform Engagements
@@ -398,7 +458,6 @@ if data is not None and not data.empty:
     st.plotly_chart(fig_platform_engagement, use_container_width=True)
     st.markdown("#### Insight Kucing AI 💡")
 
-    # Prompt Engineering for Platform Engagements
     prompt_platform_engagement = (
         "Analyze the engagement performance across different platforms. "
         "Provide 3 concise and actionable key insights for platform-specific content strategy. "
@@ -408,6 +467,7 @@ if data is not None and not data.empty:
     platform_engagement_data_str = platform_engagement.to_string(index=False)
     ai_insight_platform_engagement = get_ai_insight(ai_model, openrouter_api_key, prompt_platform_engagement, platform_engagement_data_str)
     st.info(ai_insight_platform_engagement)
+    all_insights["platform_engagement"] = ai_insight_platform_engagement # Store insight
     st.markdown("---")
 
     # 4. Media Type Mix
@@ -421,7 +481,6 @@ if data is not None and not data.empty:
     st.plotly_chart(fig_media_type_mix, use_container_width=True)
     st.markdown("#### Insight Kucing AI 💡")
 
-    # Prompt Engineering for Media Type Mix
     prompt_media_type_mix = (
         "Analyze the proportion of different media types in the content. "
         "Provide 3 concise and actionable key insights relevant to content format preferences. "
@@ -431,6 +490,7 @@ if data is not None and not data.empty:
     media_type_data_str = media_type_counts.to_string(index=False)
     ai_insight_media_type_mix = get_ai_insight(ai_model, openrouter_api_key, prompt_media_type_mix, media_type_data_str)
     st.info(ai_insight_media_type_mix)
+    all_insights["media_type_mix"] = ai_insight_media_type_mix # Store insight
     st.markdown("---")
 
     # 5. Top 5 Locations by Engagement
@@ -446,7 +506,6 @@ if data is not None and not data.empty:
     st.plotly_chart(fig_top_locations, use_container_width=True)
     st.markdown("#### Insight Kucing AI 💡")
 
-    # Prompt Engineering for Top 5 Locations
     prompt_top_locations = (
         "Analyze the top 5 geographical locations by engagement. "
         "Provide 3 concise and actionable key insights relevant to audience targeting or local content production. "
@@ -456,6 +515,7 @@ if data is not None and not data.empty:
     top_locations_data_str = top_5_locations.to_string(index=False)
     ai_insight_top_locations = get_ai_insight(ai_model, openrouter_api_key, prompt_top_locations, top_locations_data_str)
     st.info(ai_insight_top_locations)
+    all_insights["top_locations"] = ai_insight_top_locations # Store insight
     st.markdown("---")
 
     # Tambahkan metrik umum di sidebar
@@ -482,9 +542,27 @@ if data is not None and not data.empty:
         </div>
     """, unsafe_allow_html=True)
 
+    # --- Download PDF Button ---
+    st.markdown("---")
+    st.subheader("Unduh Laporan 📥")
+    # Hanya aktifkan tombol unduh jika API key tersedia dan data tidak kosong
+    if openrouter_api_key and data is not None and not data.empty and all(k in all_insights for k in ["sentiment", "engagement_trend", "platform_engagement", "media_type_mix", "top_locations"]):
+        pdf_bytes = generate_pdf_report(data, all_insights)
+        st.download_button(
+            label="Unduh Laporan PDF 📄",
+            data=pdf_bytes,
+            file_name="Laporan_Intelijen_Media_DASH.pdf",
+            mime="application/pdf",
+            help="Unduh laporan ringkas dalam format PDF yang berisi insight AI."
+        )
+    else:
+        st.info("Masukkan OpenRouter API Key dan unggah data untuk mengaktifkan fitur unduh laporan PDF.")
+
+
 else:
     st.warning("Mohon unggah file CSV yang valid atau tunggu data sintetis dimuat untuk melihat dashboard.")
 
 # --- Footer ---
 st.markdown("---")
 st.markdown("Papan Kontrol Kucing Dibuat dengan 💖 oleh Tim Kucing Cerdas 🐱")
+
