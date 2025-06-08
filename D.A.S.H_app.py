@@ -6,31 +6,34 @@ from openai import OpenAI # Import OpenAI SDK
 from fpdf import FPDF # Import FPDF untuk membuat PDF
 
 # --- Konfigurasi Halaman Streamlit ---
+# Mengatur judul halaman, ikon, dan layout.
 st.set_page_config(
     page_title="Papan Kontrol Intelijen Media Kucing 🐾",
-    page_icon="🐱",
-    layout="wide",
-    initial_sidebar_state="expanded"
+    page_icon="🐱", # Ikon kucing yang lucu
+    layout="wide", # Layout lebar untuk tampilan dashboard yang lebih baik
+    initial_sidebar_state="expanded" # Sidebar dibuka secara default
 )
 
 # --- CSS Kustom untuk Tema Kucing dan Warna Pastel (Satu Hue: Orange/Brown) ---
+# Menambahkan CSS kustom untuk memberikan tampilan yang lembut, pastel, dan bertema kucing.
+# Menggunakan font Inter dari Google Fonts.
 st.markdown("""
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
 
         html, body, [class*="st-"] {
             font-family: 'Inter', sans-serif;
-            color: #4B4B4B; /* Soft dark text color */
+            color: #4B4B4B; /* Warna teks gelap lembut */
         }
         .stApp {
-            background-color: #FDF7F5; /* Very light, almost white with a warm hint */
-            background-image: url('https://placehold.co/10x10/FDF7F5/FDF7F5?text=+'); /* Small placeholder */
+            background-color: #FDF7F5; /* Sangat ringan, hampir putih dengan hint warm */
+            background-image: url('https://placehold.co/10x10/FDF7F5/FDF7F5?text=+'); /* Placeholder kecil */
             background-repeat: repeat;
         }
         .st-emotion-cache-z5fcl4 { /* Header main-content */
-            background-color: #F8E0CC; /* Soft pastel orange for header */
+            background-color: #F8E0CC; /* Oranye pastel lembut untuk header */
             padding: 1rem 1rem;
-            border-radius: 15px; /* Rounded corners */
+            border-radius: 15px; /* Sudut membulat */
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
             margin-bottom: 20px;
         }
@@ -39,7 +42,7 @@ st.markdown("""
             padding-bottom: 1rem;
         }
         .st-emotion-cache-16txt4y { /* Sidebar background */
-            background-color: #D4A59A; /* Deeper pastel brown/orange */
+            background-color: #D4A59A; /* Coklat/oranye pastel yang lebih dalam */
             border-radius: 15px;
             padding: 20px;
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
@@ -48,10 +51,10 @@ st.markdown("""
             color: #3C3C3C;
         }
         h1, h2, h3, h4, h5, h6 {
-            color: #5A5A5A; /* Slightly darker heading color */
+            color: #5A5A5A; /* Warna judul yang sedikit lebih gelap */
         }
         .stButton>button {
-            background-color: #EEDDCC; /* Soft peach/orange pastel for buttons */
+            background-color: #EEDDCC; /* Peach/oranye pastel lembut untuk tombol */
             color: #5A5A5A;
             border-radius: 10px;
             border: none;
@@ -61,7 +64,7 @@ st.markdown("""
             transition: all 0.3s ease;
         }
         .stButton>button:hover {
-            background-color: #E5CCBB; /* Slightly darker on hover */
+            background-color: #E5CCBB; /* Warna sedikit lebih gelap saat hover */
             color: #3C3C3C;
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
             transform: translateY(-2px);
@@ -86,7 +89,7 @@ st.markdown("""
             color: #5A5A5A;
         }
         .st-emotion-cache-eczf16 { /* Expander header */
-            background-color: #D4A59A; /* Same as sidebar for consistency */
+            background-color: #D4A59A; /* Sama dengan sidebar untuk konsistensi */
             border-radius: 10px;
             padding: 0.75rem 1rem;
             margin-bottom: 10px;
@@ -105,7 +108,7 @@ st.markdown("""
             background-color: #F8EBE6; /* Peach/light orange pastel */
             border-radius: 15px;
             padding: 20px;
-            text-align: center;
+            text_align: center;
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
             margin-bottom: 20px;
         }
@@ -546,6 +549,7 @@ if data is not None and not data.empty:
     st.markdown("---")
     st.subheader("Unduh Laporan 📥")
     # Hanya aktifkan tombol unduh jika API key tersedia dan data tidak kosong
+    # Dan pastikan semua insight AI sudah ada (meskipun mungkin ada error internal di insight itu sendiri)
     if openrouter_api_key and data is not None and not data.empty and all(k in all_insights for k in ["sentiment", "engagement_trend", "platform_engagement", "media_type_mix", "top_locations"]):
         pdf_bytes = generate_pdf_report(data, all_insights)
         st.download_button(
@@ -565,4 +569,3 @@ else:
 # --- Footer ---
 st.markdown("---")
 st.markdown("Papan Kontrol Kucing Dibuat dengan 💖 oleh Tim Kucing Cerdas 🐱")
-
