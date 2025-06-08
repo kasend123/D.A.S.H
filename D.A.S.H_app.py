@@ -231,7 +231,7 @@ st.title("🐾 D.A.S.H: Data Analysis & Smart Highlighting 🐾")
 st.markdown("Selamat datang di papan kontrol intelijen media Anda! Unggah data Anda dan biarkan kucing-kucing kami menganalisisnya untuk insight media yang menggemaskan.")
 
 # --- How to Use Section ---
-with st.expander("❓ Cara Menggunakan Dashboard Ini 🐾"):
+with st.expander("🐾 Cara Menggunakan Dashboard Ini❓ 🐾"):
     st.markdown("""
     Dashboard **D.A.S.H (Data Analysis & Smart Highlighting)** dirancang untuk membantu Anda mendapatkan insight dari data media Anda dengan mudah. Ikuti langkah-langkah berikut untuk memulai:
 
