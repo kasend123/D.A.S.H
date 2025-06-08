@@ -129,19 +129,24 @@ def create_synthetic_data(num_rows=1000):
     Membuat dataset sintetis untuk tujuan demo jika tidak ada file yang diunggah.
     """
     dates = pd.date_range(start="2024-01-01", periods=num_rows, freq="H")
-    platforms = np.random.choice(["Twitter", "Instagram", "News Portal", "Facebook", "TikTok"], num_rows)
-    sentiments = np.random.choice(["Positif", "Negatif", "Netral"], num_rows, p=[0.5, 0.2, 0.3])
-    locations = np.random.choice(["Jakarta", "Surabaya", "Bandung", "Medan", "Yogyakarta", "Bali", "Semarang"], num_rows)
+    platforms = np.random.choice(["X/Twitter", "Instagram", "News Portal", "Facebook", "TikTok", "YouTube"], num_rows)
+    sentiments = np.random.choice(["Positive", "Negative", "Neutral"], num_rows, p=[0.5, 0.2, 0.3])
+    locations = np.random.choice(["Jakarta", "Surabaya", "Bandung", "Medan", "Yogyakarta", "Bali", "Semarang", "Denpasar", "Makassar"], num_rows)
     engagement = np.random.randint(100, 5000, num_rows)
-    media_types = np.random.choice(["Text", "Image", "Video", "Infographic"], num_rows)
+    media_types = np.random.choice(["Text", "Image", "Video", "Carousel", "Infographic"], num_rows)
+    influencer_brand = np.random.choice(["@genzfoodie | Sipply", "@kulinerhits | Sipply", "@drinkculture | Sipply", "@snackattack | Sipply", "@tastebuds.id | Sipply"], num_rows)
+    post_type = np.random.choice(["Review", "Product Launch", "Behind the Scenes", "Collab", "Promo"], num_rows)
+
 
     data = pd.DataFrame({
-        "Tanggal": dates,
+        "Date": dates, # Diubah dari "Tanggal" menjadi "Date"
         "Platform": platforms,
-        "Sentimen": sentiments,
-        "Lokasi": locations,
-        "Engagement": engagement,
-        "Tipe Media": media_types
+        "Sentiment": sentiments, # Diubah dari "Sentimen" menjadi "Sentiment"
+        "Location": locations,
+        "Engagements": engagement, # Diubah dari "Engagement" menjadi "Engagements"
+        "Media_Type": media_types, # Diubah dari "Tipe Media" menjadi "Media_Type"
+        "Influencer_Brand": influencer_brand,
+        "Post_Type": post_type
     })
     return data
 
@@ -155,55 +160,61 @@ def clean_and_preprocess_data(df):
     st.sidebar.subheader("Status Pembersihan Data 🧹")
     cleaning_messages = []
 
-    # Definisikan kolom-kolom esensial yang diharapkan
-    essential_columns = ["Tanggal", "Platform", "Sentimen", "Lokasi", "Engagement", "Tipe Media"]
-    missing_columns = [col for col in essential_columns if col not in df.columns]
+    # Definisikan kolom-kolom esensial yang diharapkan sesuai dengan CSV
+    essential_columns = ["Date", "Platform", "Sentiment", "Location", "Engagements", "Media_Type"]
+    # Menambahkan kolom opsional yang ada di CSV agar tidak terbuang
+    optional_columns = ["Influencer_Brand", "Post_Type"]
+    all_expected_columns = essential_columns + optional_columns
 
-    if missing_columns:
-        st.error(f"Meong! Kolom esensial berikut tidak ditemukan dalam file Anda: {', '.join(missing_columns)}. "
+    # Memeriksa apakah semua kolom esensial ada
+    missing_essential_columns = [col for col in essential_columns if col not in df.columns]
+    if missing_essential_columns:
+        st.error(f"Meong! Kolom esensial berikut tidak ditemukan dalam file Anda: {', '.join(missing_essential_columns)}. "
                  f"Pastikan CSV Anda memiliki kolom-kolom ini.")
         return None # Mengembalikan None jika ada kolom esensial yang hilang
 
-    # 1. Pastikan kolom 'Tanggal' dalam format datetime dan hapus baris yang tidak valid
-    if "Tanggal" in df.columns:
-        initial_invalid_dates = df["Tanggal"].isnull().sum() # Hitung NaNs sebelum konversi
-        df["Tanggal"] = pd.to_datetime(df["Tanggal"], errors='coerce')
+    # 1. Pastikan kolom 'Date' dalam format datetime dan hapus baris yang tidak valid
+    if "Date" in df.columns:
+        initial_invalid_dates = df["Date"].isnull().sum() # Hitung NaNs sebelum konversi
+        df["Date"] = pd.to_datetime(df["Date"], errors='coerce')
         # Hitung NaNs setelah konversi, ini adalah jumlah baris yang tidak bisa dikonversi
-        converted_invalid_dates = df["Tanggal"].isnull().sum()
+        converted_invalid_dates = df["Date"].isnull().sum()
         if converted_invalid_dates > initial_invalid_dates: # Hanya log jika ada yang baru menjadi NaT
-            cleaning_messages.append(f"- Menghapus {converted_invalid_dates - initial_invalid_dates} baris dengan format 'Tanggal' yang tidak valid.")
-        df.dropna(subset=["Tanggal"], inplace=True)
+            cleaning_messages.append(f"- Menghapus {converted_invalid_dates - initial_invalid_dates} baris dengan format 'Date' yang tidak valid.")
+        df.dropna(subset=["Date"], inplace=True)
     else:
-        st.error("Meong! Kolom 'Tanggal' tidak ditemukan.")
+        st.error("Meong! Kolom 'Date' tidak ditemukan.")
         return None
 
-    # 2. Pastikan kolom 'Engagement' adalah numerik
-    if "Engagement" in df.columns:
-        df["Engagement"] = pd.to_numeric(df["Engagement"], errors='coerce')
-        if df["Engagement"].isnull().any():
-            nan_engagement_count = df["Engagement"].isnull().sum()
-            cleaning_messages.append(f"- Menghapus {nan_engagement_count} baris dengan nilai 'Engagement' yang tidak valid.")
-            df.dropna(subset=["Engagement"], inplace=True)
+    # 2. Pastikan kolom 'Engagements' adalah numerik
+    if "Engagements" in df.columns:
+        df["Engagements"] = pd.to_numeric(df["Engagements"], errors='coerce')
+        if df["Engagements"].isnull().any():
+            nan_engagement_count = df["Engagements"].isnull().sum()
+            cleaning_messages.append(f"- Menghapus {nan_engagement_count} baris dengan nilai 'Engagements' yang tidak valid.")
+            df.dropna(subset=["Engagements"], inplace=True)
     else:
-        st.error("Meong! Kolom 'Engagement' tidak ditemukan.")
+        st.error("Meong! Kolom 'Engagements' tidak ditemukan.")
         return None
 
     # 3. Tangani nilai yang hilang di kolom-kolom kategorikal (opsional: mengisi dengan 'Unknown')
-    categorical_columns = ["Platform", "Sentimen", "Lokasi", "Tipe Media"]
+    categorical_columns = ["Platform", "Sentiment", "Location", "Media_Type"] # Diubah dari "Sentimen" dan "Tipe Media"
     for col in categorical_columns:
         if col in df.columns and df[col].isnull().any():
             initial_nan_count = df[col].isnull().sum()
+            # st.sidebar.info(f"Mengisi {initial_nan_count} nilai kosong di '{col}' dengan 'Unknown'.")
+            # df[col].fillna("Unknown", inplace=True) # Mengisi dengan 'Unknown'
             df.dropna(subset=[col], inplace=True) # Untuk sementara, drop saja untuk memastikan visualisasi berjalan
             cleaning_messages.append(f"- Menghapus {initial_nan_count} baris dengan nilai kosong di kolom '{col}'.")
     
-    # 4. Filter data jika ada tanggal di masa depan (jika relevan)
-    # df = df[df["Tanggal"] <= pd.to_datetime("today")]
+    # 4. Filter data jika ada tanggal di masa depan (jika relevan) - contoh
+    # df = df[df["Date"] <= pd.to_datetime("today")]
 
     processed_rows = len(df)
     if processed_rows < original_rows:
         st.sidebar.warning(f"Meong! {original_rows - processed_rows} baris dihapus selama pembersihan.")
     else:
-        st.sidebar.success("Meong! Tidak ada baris yang dihapus selama pembersihan (atau sudah bersih).")
+        st.sidebar.info("Meong! Tidak ada baris yang dihapus secara signifikan selama pembersihan.")
     
     if cleaning_messages:
         for msg in cleaning_messages:
@@ -231,7 +242,7 @@ if uploaded_file is not None:
             st.error("Meong! Data kosong atau tidak valid setelah pembersihan. Mohon periksa file CSV Anda.")
             data = None # Pastikan data None jika kosong/tidak valid
     except Exception as e:
-        st.error(f"Meong! Terjadi kesalahan saat memuat atau membersihkan file: {e}. Pastikan itu adalah CSV yang valid.")
+        st.error(f"Meong! Terjadi kesalahan saat memuat atau membersihkan file: {e}. Pastikan itu adalah CSV yang valid dan memiliki format kolom yang diharapkan.")
         data = None # Reset data jika ada kesalahan
 else:
     st.sidebar.info("Tidak ada file yang diunggah. Menggunakan data sintetis untuk demo.")
@@ -249,7 +260,7 @@ if data is not None and not data.empty:
 
     # 1. Sentiment Breakdown
     st.subheader("1. Sebaran Sentimen (Sentiment Breakdown) 😽")
-    sentiment_counts = data["Sentimen"].value_counts().reset_index()
+    sentiment_counts = data["Sentiment"].value_counts().reset_index() # Menggunakan "Sentiment"
     sentiment_counts.columns = ["Sentimen", "Jumlah"]
     fig_sentiment = px.pie(sentiment_counts, values="Jumlah", names="Sentimen",
                            title="Distribusi Sentimen Terhadap Topik",
@@ -267,9 +278,9 @@ if data is not None and not data.empty:
     # 2. Engagement Trend Over Time
     st.subheader("2. Tren Engagement dari Waktu ke Waktu 🐾")
     # Agregasi data per hari untuk tren engagement
-    data["Tanggal_Hari"] = data["Tanggal"].dt.date
-    daily_engagement = data.groupby("Tanggal_Hari")["Engagement"].sum().reset_index()
-    fig_engagement_trend = px.line(daily_engagement, x="Tanggal_Hari", y="Engagement",
+    data["Date_Day"] = data["Date"].dt.date # Menggunakan "Date"
+    daily_engagement = data.groupby("Date_Day")["Engagements"].sum().reset_index() # Menggunakan "Engagements"
+    fig_engagement_trend = px.line(daily_engagement, x="Date_Day", y="Engagements", # Menggunakan "Date_Day" dan "Engagements"
                                    title="Tren Total Engagement Harian",
                                    color_discrete_sequence=["#FFDAB9"]) # Warna pastel orange
     fig_engagement_trend.update_xaxes(title_text="Tanggal")
@@ -285,9 +296,9 @@ if data is not None and not data.empty:
 
     # 3. Platform Engagements
     st.subheader("3. Engagement Berdasarkan Platform 😺")
-    platform_engagement = data.groupby("Platform")["Engagement"].sum().reset_index()
-    platform_engagement = platform_engagement.sort_values(by="Engagement", ascending=False)
-    fig_platform_engagement = px.bar(platform_engagement, x="Platform", y="Engagement",
+    platform_engagement = data.groupby("Platform")["Engagements"].sum().reset_index() # Menggunakan "Engagements"
+    platform_engagement = platform_engagement.sort_values(by="Engagements", ascending=False) # Menggunakan "Engagements"
+    fig_platform_engagement = px.bar(platform_engagement, x="Platform", y="Engagements", # Menggunakan "Engagements"
                                       title="Total Engagement per Platform",
                                       color="Platform",
                                       color_discrete_sequence=px.colors.qualitative.Pastel)
@@ -296,7 +307,7 @@ if data is not None and not data.empty:
     st.plotly_chart(fig_platform_engagement, use_container_width=True)
     st.markdown("#### Insight Kucing AI 💡")
     st.info("""
-    - **Twitter** dan **Instagram** menunjukkan engagement tertinggi, mengindikasikan platform-platform ini paling efektif untuk menjangkau audiens.
+    - **X/Twitter** dan **Instagram** menunjukkan engagement tertinggi, mengindikasikan platform-platform ini paling efektif untuk menjangkau audiens.
     - **News Portal** memiliki engagement yang solid, menunjukkan bahwa berita dan artikel masih relevan bagi audiens.
     - Platform dengan engagement rendah mungkin memerlukan evaluasi ulang strategi atau fokus pada tipe konten yang berbeda.
     """)
@@ -304,7 +315,7 @@ if data is not None and not data.empty:
 
     # 4. Media Type Mix
     st.subheader("4. Komposisi Tipe Media 😻")
-    media_type_counts = data["Tipe Media"].value_counts().reset_index()
+    media_type_counts = data["Media_Type"].value_counts().reset_index() # Menggunakan "Media_Type"
     media_type_counts.columns = ["Tipe Media", "Jumlah"]
     fig_media_type_mix = px.pie(media_type_counts, values="Jumlah", names="Tipe Media",
                                 title="Proporsi Tipe Media",
@@ -321,11 +332,11 @@ if data is not None and not data.empty:
 
     # 5. Top 5 Locations by Engagement
     st.subheader("5. 5 Lokasi Teratas Berdasarkan Engagement 🌍")
-    location_engagement = data.groupby("Lokasi")["Engagement"].sum().reset_index()
-    top_5_locations = location_engagement.sort_values(by="Engagement", ascending=False).head(5)
-    fig_top_locations = px.bar(top_5_locations, x="Lokasi", y="Engagement",
+    location_engagement = data.groupby("Location")["Engagements"].sum().reset_index() # Menggunakan "Location" dan "Engagements"
+    top_5_locations = location_engagement.sort_values(by="Engagements", ascending=False).head(5) # Menggunakan "Engagements"
+    fig_top_locations = px.bar(top_5_locations, x="Location", y="Engagements", # Menggunakan "Location" dan "Engagements"
                                 title="Top 5 Lokasi Berdasarkan Total Engagement",
-                                color="Lokasi",
+                                color="Location",
                                 color_discrete_sequence=px.colors.qualitative.Pastel)
     fig_top_locations.update_xaxes(title_text="Lokasi")
     fig_top_locations.update_yaxes(title_text="Total Engagement")
@@ -340,11 +351,11 @@ if data is not None and not data.empty:
 
     # Tambahkan metrik umum di sidebar
     st.sidebar.subheader("Statistik Ringkas 📈")
-    total_engagement = data["Engagement"].sum()
+    total_engagement = data["Engagements"].sum() # Menggunakan "Engagements"
     unique_platforms = data["Platform"].nunique()
-    # Pastikan data['Sentimen'] tidak kosong sebelum mode() dipanggil
-    if not data['Sentimen'].empty:
-        most_common_sentiment = data["Sentimen"].mode()[0]
+    # Pastikan data['Sentiment'] tidak kosong sebelum mode() dipanggil
+    if not data['Sentiment'].empty: # Menggunakan "Sentiment"
+        most_common_sentiment = data["Sentiment"].mode()[0] # Menggunakan "Sentiment"
     else:
         most_common_sentiment = "Tidak Ada Data Sentimen"
 
