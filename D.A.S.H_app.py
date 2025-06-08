@@ -63,7 +63,7 @@ st.markdown("""
         .stButton>button:hover {
             background-color: #E5CCBB; /* Warna sedikit lebih gelap saat hover */
             color: #3C3C3C;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            box_shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
             transform: translateY(-2px);
         }
         .block-container {
@@ -100,9 +100,9 @@ st.markdown("""
             color: #4B4B4B;
         }
 
-        /* Styling untuk metrik */
+        /* Styling for metrics */
         .metric-container {
-            background-color: #F8EBE6; /* Peach/oranye pastel sangat ringan */
+            background-color: #F8EBE6; /* Peach/light orange pastel */
             border-radius: 15px;
             padding: 20px;
             text-align: center;
@@ -115,7 +115,7 @@ st.markdown("""
             font-weight: 600;
         }
         .metric-container .st-emotion-cache-r421ms + div {
-            color: #D4A59A; /* Warna value yang lebih kuat, dari palet utama */
+            color: #D4A59A; /* Stronger value color, from main palette */
             font-size: 2em;
             font-weight: bold;
         }
@@ -127,10 +127,10 @@ st.markdown("""
 single_hue_pastel_colors = ["#F8E0CC", "#EEDDCB", "#E0CCBB", "#D4BBAC", "#C8AA9C", "#BBAA9B"]
 
 
-# --- Fungsi untuk Membuat Dataset Sintetis ---
+# --- Function to Create Synthetic Data ---
 def create_synthetic_data(num_rows=1000):
     """
-    Membuat dataset sintetis untuk tujuan demo jika tidak ada file yang diunggah.
+    Creates synthetic data for demo purposes if no file is uploaded.
     """
     dates = pd.date_range(start="2024-01-01", periods=num_rows, freq="H")
     platforms = np.random.choice(["X/Twitter", "Instagram", "News Portal", "Facebook", "TikTok", "YouTube"], num_rows)
@@ -154,81 +154,110 @@ def create_synthetic_data(num_rows=1000):
     })
     return data
 
-# --- Fungsi untuk Pembersihan dan Pra-pemrosesan Data ---
+# --- Function for Data Cleaning and Preprocessing ---
 def clean_and_preprocess_data(df):
     """
-    Melakukan pembersihan dan pra-pemrosesan pada DataFrame yang diunggah.
+    Performs cleaning and preprocessing on the uploaded DataFrame.
     """
     original_rows = len(df)
     st.sidebar.markdown("---")
     st.sidebar.subheader("Status Pembersihan Data 🧹")
     cleaning_messages = []
 
-    # Definisikan kolom-kolom esensial yang diharapkan sesuai dengan CSV
+    # Define essential columns expected from the CSV
     essential_columns = ["Date", "Platform", "Sentiment", "Location", "Engagements", "Media_Type"]
-    # Menambahkan kolom opsional yang ada di CSV agar tidak terbuang
+    # Add optional columns present in the CSV to avoid discarding them
     optional_columns = ["Influencer_Brand", "Post_Type"]
     all_expected_columns = essential_columns + optional_columns
 
-    # Memeriksa apakah semua kolom esensial ada
+    # Check if all essential columns are present
     missing_essential_columns = [col for col in essential_columns if col not in df.columns]
     if missing_essential_columns:
-        st.error(f"Meong! Kolom esensial berikut tidak ditemukan dalam file Anda: {', '.join(missing_essential_columns)}. "
-                 f"Pastikan CSV Anda memiliki kolom-kolom ini.")
-        return None # Mengembalikan None jika ada kolom esensial yang hilang
+        st.error(f"Meong! Essential columns not found in your file: {', '.join(missing_essential_columns)}. "
+                 f"Please ensure your CSV has these columns.")
+        return None # Return None if essential columns are missing
 
-    # 1. Pastikan kolom 'Date' dalam format datetime dan hapus baris yang tidak valid
+    # 1. Ensure 'Date' column is in datetime format and drop invalid rows
     if "Date" in df.columns:
-        initial_invalid_dates = df["Date"].isnull().sum() # Hitung NaNs sebelum konversi
+        initial_invalid_dates = df["Date"].isnull().sum() # Count NaNs before conversion
         df["Date"] = pd.to_datetime(df["Date"], errors='coerce')
-        # Hitung NaNs setelah konversi, ini adalah jumlah baris yang tidak bisa dikonversi
+        # Count NaNs after conversion, this is the number of rows that could not be converted
         converted_invalid_dates = df["Date"].isnull().sum()
-        if converted_invalid_dates > initial_invalid_dates: # Hanya log jika ada yang baru menjadi NaT
-            cleaning_messages.append(f"- Menghapus {converted_invalid_dates - initial_invalid_dates} baris dengan format 'Date' yang tidak valid.")
+        if converted_invalid_dates > initial_invalid_dates: # Only log if new NaTs appeared
+            cleaning_messages.append(f"- Removed {converted_invalid_dates - initial_invalid_dates} rows with invalid 'Date' format.")
         df.dropna(subset=["Date"], inplace=True)
     else:
-        st.error("Meong! Kolom 'Date' tidak ditemukan.")
+        st.error("Meong! 'Date' column not found.")
         return None
 
-    # 2. Pastikan kolom 'Engagements' adalah numerik
+    # 2. Ensure 'Engagements' column is numeric
     if "Engagements" in df.columns:
         df["Engagements"] = pd.to_numeric(df["Engagements"], errors='coerce')
         if df["Engagements"].isnull().any():
             nan_engagement_count = df["Engagements"].isnull().sum()
-            cleaning_messages.append(f"- Menghapus {nan_engagement_count} baris dengan nilai 'Engagements' yang tidak valid.")
+            cleaning_messages.append(f"- Removed {nan_engagement_count} rows with invalid 'Engagements' values.")
             df.dropna(subset=["Engagements"], inplace=True)
     else:
-        st.error("Meong! Kolom 'Engagements' tidak ditemukan.")
+        st.error("Meong! 'Engagements' column not found.")
         return None
 
-    # 3. Tangani nilai yang hilang di kolom-kolom kategorikal (opsional: mengisi dengan 'Unknown')
+    # 3. Handle missing values in categorical columns (optional: fill with 'Unknown')
     categorical_columns = ["Platform", "Sentiment", "Location", "Media_Type"]
     for col in categorical_columns:
         if col in df.columns and df[col].isnull().any():
             initial_nan_count = df[col].isnull().sum()
-            df.dropna(subset=[col], inplace=True) # Untuk sementara, drop saja untuk memastikan visualisasi berjalan
-            cleaning_messages.append(f"- Menghapus {initial_nan_count} baris dengan nilai kosong di kolom '{col}'.")
+            df.dropna(subset=[col], inplace=True) # For now, just drop to ensure visualization works
+            cleaning_messages.append(f"- Removed {initial_nan_count} rows with empty values in '{col}' column.")
     
-    # 4. Filter data jika ada tanggal di masa depan (jika relevan) - contoh
+    # 4. Filter data if there are future dates (if relevant) - example
     # df = df[df["Date"] <= pd.to_datetime("today")]
 
     processed_rows = len(df)
     if processed_rows < original_rows:
-        st.sidebar.warning(f"Meong! {original_rows - processed_rows} baris dihapus selama pembersihan.")
+        st.sidebar.warning(f"Meong! {original_rows - processed_rows} rows removed during cleaning.")
     else:
-        st.sidebar.info("Meong! Tidak ada baris yang dihapus secara signifikan selama pembersihan.")
+        st.sidebar.info("Meong! No significant rows removed during cleaning.")
     
     if cleaning_messages:
         for msg in cleaning_messages:
             st.sidebar.markdown(msg)
     else:
-        st.sidebar.info("- Data terlihat bersih, tidak ada pembersihan signifikan yang diperlukan.")
+        st.sidebar.info("- Data appears clean, no significant cleaning required.")
 
     return df
 
-# --- Header Aplikasi ---
+# --- Application Header ---
 st.title("🐾 D.A.S.H: Data Analysis & Smart Highlighting 🐾")
 st.markdown("Selamat datang di papan kontrol intelijen media Anda! Unggah data Anda dan biarkan kucing-kucing kami menganalisisnya untuk insight media yang menggemaskan.")
+
+# --- How to Use Section ---
+with st.expander("❓ Cara Menggunakan Dashboard Ini 🐾"):
+    st.markdown("""
+    Dashboard **D.A.S.H (Data Analysis & Smart Highlighting)** dirancang untuk membantu Anda mendapatkan insight dari data media Anda dengan mudah. Ikuti langkah-langkah berikut untuk memulai:
+
+    1.  **Unggah Data Anda:**
+        * Di sidebar kiri, cari bagian "Unggah Data Anda 😺".
+        * Klik tombol "Pilih file CSV" dan unggah file CSV Anda.
+        * **Pastikan file CSV Anda memiliki kolom-kolom berikut:** `Date`, `Platform`, `Sentiment`, `Location`, `Engagements`, `Media_Type`.
+        * Setelah berhasil diunggah, Anda akan melihat status pembersihan data di sidebar. Jika ada masalah, pesan error akan muncul.
+
+    2.  **Jelajahi Pratinjau Data:**
+        * Setelah data berhasil dimuat dan dibersihkan, Anda akan melihat tabel "Pratinjau Data Kucing" yang menampilkan beberapa baris pertama dari dataset Anda. Ini memastikan data sudah siap untuk analisis.
+
+    3.  **Analisis Visualisasi Interaktif:**
+        * Gulir ke bawah untuk melihat berbagai chart interaktif yang menampilkan insight penting dari data Anda.
+        * Setiap chart dirancang untuk memberikan gambaran cepat tentang aspek tertentu dari kinerja media Anda (misalnya, distribusi sentimen, tren engagement, kinerja platform).
+        * Anda bisa mengarahkan kursor ke elemen-elemen chart untuk melihat detail lebih lanjut (fitur interaktif Plotly).
+
+    4.  **Dapatkan Insight dari Kucing AI:**
+        * Di bawah setiap chart, Anda akan menemukan bagian "Insight Kucing AI 💡" yang berisi rangkuman naratif dari temuan penting, tren yang muncul, atau anomali data. Insight ini dihasilkan oleh model AI untuk membantu Anda memahami data dengan lebih baik.
+
+    5.  **Periksa Statistik Ringkas:**
+        * Di sidebar kiri, Anda juga dapat melihat "Statistik Ringkas" yang menampilkan metrik-metrik penting seperti total engagement, jumlah platform unik, dan sentimen paling umum.
+
+    Selamat menjelajahi dan semoga D.A.S.H membantu analisis media Anda! 🌟
+    """)
+st.markdown("---") # Garis pemisah setelah expander
 
 # --- Bagian Unggah File CSV ---
 st.sidebar.header("Unggah Data Anda 😺")
